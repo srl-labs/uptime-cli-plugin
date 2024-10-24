@@ -1,0 +1,15 @@
+#!/bin/bash
+
+function deploy-lab {
+    sudo -E clab dep -c
+}
+
+function destroy-lab {
+    sudo -E clab des -c
+}
+
+function fetch-srl-cli {
+    sudo docker cp srl:/opt/srlinux/python/virtual-env/lib/python3.11/dist-packages/srlinux ./src
+}
+
+$@
