@@ -1,5 +1,7 @@
 import subprocess
 
+from mgmt.cli.cli_state import CliState
+
 from srlinux.constants import OS_NAME
 from srlinux.data import Border, Data, TagValueFormatter
 from srlinux.location import build_path
@@ -12,15 +14,10 @@ from srlinux.syntax import Syntax
 
 class Plugin(CliPlugin):
     """
-    Adds 'show version' command.
+    Adds 'show myversion' command.
 
     Example output:
 
-    Hostname          : DUT4
-    Chassis Type      : 7250 IXR-10
-    Part Number       : Sim Part No.
-    Serial Number     : Sim Serial No.
-    System MAC Address: 00:01:04:FF:00:00
     Software Version  : v0.0.0-12388-g1815c7e
     Architecture      : x86_64
     Last Booted       : 2019-09-12T17:34:42.865Z
@@ -30,13 +27,13 @@ class Plugin(CliPlugin):
 
     def load(self, cli: CliLoader, **_kwargs):
         cli.show_mode.add_command(
-            Syntax("version", help="Show basic information of the system"),
+            Syntax("myversion", help="A custom show version command"),
             update_location=False,
             callback=self._print,
             schema=self._get_schema(),
         )
 
-    def _print(self, state, output, arguments, **_kwargs):
+    def _print(self, state: CliState, output, arguments, **_kwargs):
         self._fetch_state(state)
         result = self._populate_data(state, arguments)
         self._set_formatters(result)

@@ -6,3 +6,5 @@ topology:
     srl:
       kind: nokia_srlinux
       image: ghcr.io/nokia/srlinux:24.7.2-arm-preview
+      binds:
+        - src/myversion.py:/etc/opt/srlinux/cli/plugins/myversion.py
