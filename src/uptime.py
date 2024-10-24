@@ -4,7 +4,7 @@ from srlinux.data import Border, Data, TagValueFormatter
 from srlinux.location import build_path
 from srlinux.mgmt.cli import CliPlugin, CommandNodeWithArguments
 from srlinux.mgmt.cli.cli_loader import CliLoader
-from srlinux.mgmt.cli.cli_output import CliOutput
+from srlinux.mgmt.cli.cli_output import CliOutputImpl
 from srlinux.mgmt.cli.cli_state import CliState
 from srlinux.mgmt.server.server_error import ServerError
 from srlinux.schema import FixedSchemaRoot
@@ -16,9 +16,10 @@ class Plugin(CliPlugin):
     Adds 'show uptime' command.
 
     Example output:
-
+    --{ running }--[  ]--
+    A:srl# show uptime
     ----------------------------------------------------------------------
-    Uptime     : 0 days 3 hours 39 minutes 34 seconds
+    Uptime     : 0 days 6 hours 0 minutes 25 seconds
     Last Booted: 2024-10-24T03:31:50.561Z
     ----------------------------------------------------------------------
     """
@@ -44,14 +45,14 @@ class Plugin(CliPlugin):
     def _print(
         self,
         state: CliState,
-        output: CliOutput,
+        output: CliOutputImpl,
         arguments: CommandNodeWithArguments,
         **_kwargs,
     ):
         self._fetch_state(state)
-        result = self._populate_data(state, arguments)
-        self._set_formatters(result)
-        output.print_data(result)
+        data = self._populate_data(arguments)
+        self._set_formatters(data)
+        output.print_data(data)
 
     def _fetch_state(self, state: CliState):
         last_booted_path = build_path("/platform/chassis/last-booted")
@@ -63,30 +64,29 @@ class Plugin(CliPlugin):
         except ServerError:
             self._last_booted_data = None
 
-    def _populate_data(self, state: CliState, arguments):
-        result = Data(arguments.schema)
-        data = result.uptime.create()
+    def _populate_data(self, arguments: CommandNodeWithArguments):
+        data = Data(arguments.schema)
+        uptime_container = data.uptime.create()
 
-        data.last_booted = "<Unknown>"
         if self._last_booted_data:
-            last_booted = (
+            uptime_container.last_booted = (
                 self._last_booted_data.platform.get().chassis.get().last_booted
             )
-            data.last_booted = last_booted
 
-            # t = relativedelta_with_units(boot_time)
-            data.uptime = _get_uptime(str(last_booted))
+            uptime_container.uptime = _calculate_uptime(
+                str(uptime_container.last_booted)
+            )
 
-        return result
+        return data
 
-    def _set_formatters(self, data):
+    def _set_formatters(self, data: Data):
         data.set_formatter(
-            "/uptime",
-            Border(TagValueFormatter(), Border.Above | Border.Below),
+            schema="/uptime",
+            formatter=Border(TagValueFormatter(), Border.Above | Border.Below),
         )
 
 
-def _get_uptime(last_booted: str) -> str:
+def _calculate_uptime(last_booted: str) -> str:
     """
     Calculate uptime in human-readable form from the last booted time.
     """
