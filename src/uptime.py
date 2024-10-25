@@ -59,7 +59,7 @@ class Plugin(CliPlugin):
 
         try:
             self._last_booted_data = state.server_data_store.get_data(
-                last_booted_path, recursive=True
+                last_booted_path, recursive=False
             )
         except ServerError:
             self._last_booted_data = None
