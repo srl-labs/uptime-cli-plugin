@@ -3,3 +3,5 @@ clab-*
 src/srlinux
 .venv
 .envrc
+private
+tmp
