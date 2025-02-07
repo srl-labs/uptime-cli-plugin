@@ -7,4 +7,5 @@ topology:
       kind: nokia_srlinux
       image: ghcr.io/nokia/srlinux:24.10.2
       binds:
-        - src/uptime.py:/etc/opt/srlinux/cli/plugins/uptime.py
+        # - src/uptime.py:/etc/opt/srlinux/cli/plugins/uptime.py
+        - src/uptime_simple.py:/etc/opt/srlinux/cli/plugins/uptime.py

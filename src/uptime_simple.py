@@ -1,16 +1,11 @@
 import logging
 from datetime import datetime, timezone
-from typing import cast
 
 from srlinux.data import Border, Data, TagValueFormatter
-from srlinux.data.data import DataChildrenOfType
 from srlinux.location import build_path
-from srlinux.mgmt.cli import CliPlugin, CommandNodeWithArguments
-from srlinux.mgmt.cli.cli_loader import CliLoader
-from srlinux.mgmt.cli.cli_output import CliOutput
-from srlinux.mgmt.cli.cli_state import CliState
+from srlinux.mgmt.cli import CliPlugin
 from srlinux.mgmt.server.server_error import ServerError
-from srlinux.schema import FixedSchemaRoot, SchemaNode
+from srlinux.schema import FixedSchemaRoot
 from srlinux.syntax import Syntax
 
 logger = logging.getLogger(__name__)
@@ -32,7 +27,7 @@ class Plugin(CliPlugin):
     ```
     """
 
-    def load(self, cli: CliLoader, **_kwargs):
+    def load(self, cli, **_kwargs):
         cli.show_mode.add_command(
             syntax=Syntax(
                 name="uptime",
@@ -57,63 +52,47 @@ class Plugin(CliPlugin):
 
     def _print(
         self,
-        state: CliState,
-        output: CliOutput,
-        arguments: CommandNodeWithArguments,
-        **kwargs,
+        state,
+        output,
+        arguments,
+        **_kwargs,
     ) -> None:
         self._fetch_state(state)
         data = self._populate_data(arguments)
         self._set_formatters(data)
         output.print_data(data)
 
-    def _fetch_state(self, state: CliState):
+    def _fetch_state(self, state):
         last_booted_path = build_path("/platform/chassis/last-booted")
 
         try:
             self._last_booted_data = state.server_data_store.get_data(
                 last_booted_path, recursive=False
             )
-            logger.debug(self._last_booted_data.to_debug_string())
         except ServerError:
             self._last_booted_data = None
 
-    def _populate_data(self, arguments: CommandNodeWithArguments):
-        data = Data(schema=cast(SchemaNode, arguments.schema))
-        if not isinstance(data.uptime, DataChildrenOfType):
-            raise ValueError("Uptime is not a container")
+    def _populate_data(self, arguments):
+        data = Data(schema=arguments.schema)
 
         uptime_container = data.uptime.create()
 
-        if self._last_booted_data:
-            if not isinstance(self._last_booted_data.platform, DataChildrenOfType):
-                raise ValueError("Platform is not a container")
+        uptime_container.last_booted = (
+            self._last_booted_data.platform.get().chassis.get().last_booted
+        )
 
-            platform = self._last_booted_data.platform.get()
-            if not isinstance(platform.chassis, DataChildrenOfType):
-                raise ValueError("Chassis is not a container")
-
-            chassis = platform.chassis.get()
-
-            if not isinstance(chassis.last_booted, str):
-                raise ValueError("Last booted is not a leaf")
-
-            uptime_container.last_booted = chassis.last_booted
-
-            uptime_container.uptime = _calculate_uptime(
-                str(uptime_container.last_booted)
-            )
+        uptime_container.uptime = _calculate_uptime(uptime_container.last_booted)
 
         return data
 
-    def _set_formatters(self, data: Data):
+    def _set_formatters(self, data):
         data.set_formatter(
             schema="/uptime",
             formatter=Border(TagValueFormatter(), Border.Above | Border.Below),
         )
 
 
-def _calculate_uptime(last_booted: str) -> str:
+def _calculate_uptime(last_booted):
     """
     Calculate uptime in human-readable form from the last booted time.
     """
