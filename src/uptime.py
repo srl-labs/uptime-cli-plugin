@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from srlinux.data import Border, Data, TagValueFormatter
 from srlinux.location import build_path
-from srlinux.mgmt.cli import CliPlugin, CommandNodeWithArguments
+from srlinux.mgmt.cli import CliPlugin, CommandNodeWithArguments, RequiredPlugin
 from srlinux.mgmt.cli.cli_loader import CliLoader
 from srlinux.mgmt.cli.cli_output import CliOutputImpl
 from srlinux.mgmt.cli.cli_state import CliState
@@ -13,18 +13,29 @@ from srlinux.syntax import Syntax
 
 class Plugin(CliPlugin):
     """
-    Adds 'show uptime' command.
+    Adds `show uptime` command.
 
     Example output:
+    ```
     --{ running }--[  ]--
     A:srl# show uptime
     ----------------------------------------------------------------------
     Uptime     : 0 days 6 hours 0 minutes 25 seconds
     Last Booted: 2024-10-24T03:31:50.561Z
     ----------------------------------------------------------------------
+    ```
     """
 
+    # def get_required_plugins(self):
+    #     return [
+    #         # to add `uptime` command under `show platform` we need to ensure
+    #         # that the platform plugin is loaded first
+    #         # this is not possible today; a feature request is required
+    #         RequiredPlugin(module="srlinux", plugin="platform_reports")
+    #     ]
+
     def load(self, cli: CliLoader, **_kwargs):
+        # platform = cli.show_mode.root.get_command("platform")
         cli.show_mode.add_command(
             Syntax("uptime", help="Show platform uptime"),
             schema=self._get_schema(),

@@ -1,3 +1,5 @@
 clab-*
 **/*.clab.yml.bak
 src/srlinux
+.venv
+.envrc

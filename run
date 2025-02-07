@@ -1,11 +1,28 @@
 #!/bin/bash
 
 function deploy-lab {
-    sudo -E clab dep -c
+    clab dep -c
 }
 
 function destroy-lab {
-    sudo -E clab des -c
+    clab des -c
+}
+
+#########################################
+#### Dev env functions
+#########################################
+function get-srl-venv-requirements {
+    # get the venv requirements from the container and exlude local packages (@ file)
+    sudo docker exec -i -t srl /opt/srlinux/python/virtual-env/bin/pip freeze | grep -v '@ file' > requirements.txt
+}
+
+function get-uv {
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+}
+
+# install fetched requirements to the local venv
+function install-deps {
+    uv add --requirements requirements.txt
 }
 
 
