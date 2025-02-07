@@ -1,14 +1,20 @@
+import logging
 from datetime import datetime, timezone
+from typing import cast
 
 from srlinux.data import Border, Data, TagValueFormatter
+from srlinux.data.data import DataChildrenOfType
 from srlinux.location import build_path
-from srlinux.mgmt.cli import CliPlugin, CommandNodeWithArguments, RequiredPlugin
+from srlinux.mgmt.cli import CliPlugin, CommandNodeWithArguments
 from srlinux.mgmt.cli.cli_loader import CliLoader
-from srlinux.mgmt.cli.cli_output import CliOutputImpl
+from srlinux.mgmt.cli.cli_output import CliOutput
 from srlinux.mgmt.cli.cli_state import CliState
 from srlinux.mgmt.server.server_error import ServerError
-from srlinux.schema import FixedSchemaRoot
+from srlinux.schema import FixedSchemaRoot, SchemaNode
 from srlinux.syntax import Syntax
+
+logger = logging.getLogger(__name__)
+logger.level = logging.INFO
 
 
 class Plugin(CliPlugin):
@@ -26,18 +32,14 @@ class Plugin(CliPlugin):
     ```
     """
 
-    # def get_required_plugins(self):
-    #     return [
-    #         # to add `uptime` command under `show platform` we need to ensure
-    #         # that the platform plugin is loaded first
-    #         # this is not possible today; a feature request is required
-    #         RequiredPlugin(module="srlinux", plugin="platform_reports")
-    #     ]
-
     def load(self, cli: CliLoader, **_kwargs):
-        # platform = cli.show_mode.root.get_command("platform")
         cli.show_mode.add_command(
-            Syntax("uptime", help="Show platform uptime"),
+            syntax=Syntax(
+                name="uptime",
+                short_help="⌛ Show platform uptime",
+                help="⌛ Show platform uptime in days, hours, minutes and seconds.",
+                help_epilogue="📖 It is easy to wrap up your own CLI command. Learn more about SR Linux at https://learn.srlinux.dev",
+            ),
             schema=self._get_schema(),
             callback=self._print,
         )
@@ -56,10 +58,10 @@ class Plugin(CliPlugin):
     def _print(
         self,
         state: CliState,
-        output: CliOutputImpl,
+        output: CliOutput,
         arguments: CommandNodeWithArguments,
         **_kwargs,
-    ):
+    ) -> None:
         self._fetch_state(state)
         data = self._populate_data(arguments)
         self._set_formatters(data)
@@ -72,17 +74,31 @@ class Plugin(CliPlugin):
             self._last_booted_data = state.server_data_store.get_data(
                 last_booted_path, recursive=False
             )
+            logger.debug(self._last_booted_data.to_debug_string())
         except ServerError:
             self._last_booted_data = None
 
     def _populate_data(self, arguments: CommandNodeWithArguments):
-        data = Data(arguments.schema)
+        data = Data(schema=cast(SchemaNode, arguments.schema))
+        if not isinstance(data.uptime, DataChildrenOfType):
+            raise ValueError("Uptime is not a container")
+
         uptime_container = data.uptime.create()
 
         if self._last_booted_data:
-            uptime_container.last_booted = (
-                self._last_booted_data.platform.get().chassis.get().last_booted
-            )
+            if not isinstance(self._last_booted_data.platform, DataChildrenOfType):
+                raise ValueError("Platform is not a container")
+
+            platform = self._last_booted_data.platform.get()
+            if not isinstance(platform.chassis, DataChildrenOfType):
+                raise ValueError("Chassis is not a container")
+
+            chassis = platform.chassis.get()
+
+            if not isinstance(chassis.last_booted, str):
+                raise ValueError("Last booted is not a leaf")
+
+            uptime_container.last_booted = chassis.last_booted
 
             uptime_container.uptime = _calculate_uptime(
                 str(uptime_container.last_booted)
