@@ -1,0 +1,22 @@
+acl {
+    acl-filter cpm type ipv4 {
+        entry 666 {
+            description "Allow remote python debugger"
+            match {
+                ipv4 {
+                    protocol tcp
+                }
+                transport {
+                    destination-port {
+                        operator eq
+                        value 55678
+                    }
+                }
+            }
+            action {
+                accept {
+                }
+            }
+        }
+    }
+}

@@ -6,10 +6,13 @@ topology:
     srl:
       kind: nokia_srlinux
       image: ghcr.io/nokia/srlinux:24.10.2
+      startup-config: src/debug-cfg.txt
       binds:
         # the uptime.py is a plugin that returns uptime of the SRLinux
-        # - src/uptime.py:/etc/opt/srlinux/cli/plugins/uptime.py
+        - uptime/uptime.py:/etc/opt/srlinux/cli/plugins/uptime/uptime.py
 
-        # the uptime_simply.py is simplified version of uptime.py
+        # the uptime_simple.py is simplified version of uptime.py
         # where all type validations are skipped for brevity
-        - src/uptime_simple.py:/etc/opt/srlinux/cli/plugins/uptime.py
+        # - src/uptime_simple.py:/etc/opt/srlinux/cli/plugins/uptime.py
+      exec:
+        - ip netns exec srbase-mgmt /opt/srlinux/python/virtual-env/bin/pip install debugpy

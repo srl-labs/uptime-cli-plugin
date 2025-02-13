@@ -2,6 +2,13 @@ import logging
 from datetime import datetime, timezone
 from typing import cast
 
+try:
+    import debugpy
+
+    DEBUGPY_AVAILABLE = True
+except ImportError:
+    DEBUGPY_AVAILABLE = False
+
 from srlinux.data import Border, Data, TagValueFormatter
 from srlinux.data.data import DataChildrenOfType
 from srlinux.location import build_path
@@ -33,6 +40,10 @@ class Plugin(CliPlugin):
     """
 
     def load(self, cli: CliLoader, **_kwargs):
+        if DEBUGPY_AVAILABLE:
+            debugpy.log_to("/etc/opt/srlinux/")
+            debugpy.listen(("0.0.0.0", 55678))
+            debugpy.wait_for_client()
         cli.show_mode.add_command(
             syntax=Syntax(
                 name="uptime",
@@ -68,6 +79,11 @@ class Plugin(CliPlugin):
         output.print_data(data)
 
     def _fetch_state(self, state: CliState):
+        if DEBUGPY_AVAILABLE:
+            print("bar")
+            breakpoint()
+
+        print("foo")
         last_booted_path = build_path("/platform/chassis/last-booted")
 
         try:
