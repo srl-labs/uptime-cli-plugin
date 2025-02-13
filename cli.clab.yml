@@ -8,6 +8,8 @@ topology:
       image: ghcr.io/nokia/srlinux:24.10.2
       startup-config: src/debug-cfg.txt
       binds:
+        - src/sr_cli:/opt/srlinux/bin/sr_cli
+        - src/plugin_loader.py:/opt/srlinux/python/virtual-env/lib/python3.11/dist-packages/srlinux/mgmt/cli/plugin_loader.py
         # the uptime.py is a plugin that returns uptime of the SRLinux
         - uptime/uptime.py:/etc/opt/srlinux/cli/plugins/uptime/uptime.py
 

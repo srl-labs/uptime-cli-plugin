@@ -5,6 +5,7 @@ from typing import cast
 try:
     import debugpy
 
+    os.environ["DEBUG_PYDEVD_PATHS_TRANSLATION"] = "True"
     DEBUGPY_AVAILABLE = True
 except ImportError:
     DEBUGPY_AVAILABLE = False

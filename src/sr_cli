@@ -1,0 +1,229 @@
+#!/bin/bash
+###########################################################################
+# Description:
+#     This script will launch the python CLI
+#     (forwarding any arguments passed to this script).
+#
+# Copyright (c) 2018 Nokia
+###########################################################################
+
+# Workaround for weird bash behavior of storing full content of this file in history when launched with forced -i flag
+HISTSIZE=0
+
+declare -g g_srlinux_cgroup_name="workload.slice/primary/nondatapath"
+declare -gr g_linuxadmin_group="linuxadmin"
+declare -g saved_stty=""
+
+function main()
+{
+    export PATH="/opt/srlinux/bin/:$PATH"
+    export LD_LIBRARY_PATH="/opt/srlinux/lib:$LD_LIBRARY_PATH"
+
+    resize_terminal_if_needed
+
+    args=()
+
+    shopt -s nocasematch
+    if [ -z "$TERM" ] || [ "$TERM" == "dumb" ] || [ "$TERM" == "dumb-cli-debug" ]; then
+        args+=("-d")
+    fi
+    if [ "$TERM" == "dumb-cli-debug" ] || [ "$TERM" == "xterm-cli-debug" ]; then
+        args+=("--debug")
+    fi
+    if [ "$TERM" == "dumb-cli-debug" ]; then
+        export TERM="dumb"
+    elif [ "$TERM" == "xterm-cli-debug" ]; then
+        export TERM="xterm"
+    fi
+    shopt -u nocasematch
+
+    args+=("$@")
+
+    cli_main "${args[@]}"
+
+}
+
+function resize_terminal_if_needed()
+{
+    # resize only when the stdin is from terminal (not pipe nor file input)
+    if [ ! -t 0 ]; then
+        return
+    fi
+
+    # resize only when the stdout is to a terminal (not pipe nor file redirect)
+    if [ ! -t 1 ]; then
+        return
+    fi
+
+    if [ "$(stty size)" == "0 0" ]; then
+        if [ -x "$(command -v rsz)" ]; then
+           rsz  # needs to print escape sequences to output
+        elif [ -x "$(command -v resize)" ]; then
+           resize > /dev/null
+        else
+            # neither resize nor rsz command is available, try to do something like rsz
+            local IFS='[;' escape geometry x y
+            printf '\e7\e[r\e[999;999H\e[6n\e8'
+            read -sd R escape geometry
+            x=${geometry##*;} y=${geometry%%;*}
+            if [ -n "${x}" ] && [ -n "${y}" ] && [ "${x}" -ne 0 ] && [ "${y}" -ne 0 ]; then
+                stty cols "${x}" rows "${y}"
+            else
+                # getting of the geometry failed, try to do a series of fallbacks (eventually to hardcoded 80x24)
+                if [ -n "${COLUMNS}" ] && [ -n "${LINES}" ]; then
+                    cols="${COLUMNS}"
+                    rows="${LINES}"
+                elif [ -x "$(command -v tput)" ]; then
+                    cols="$(tput cols)"
+                    rows="$(tput lines)"
+                fi
+                if [ -z "${cols}" ] || [ -z "${rows}" ] || [ "${cols}" -eq 0 ] || [ "${rows}" -eq 0 ]; then
+                    cols=80
+                    rows=24
+                fi
+                stty cols "${cols}" rows "${rows}"
+            fi
+        fi
+    fi
+}
+
+user_in_group()
+{
+    /usr/bin/groups | /usr/bin/grep -q "\b$1\b"
+}
+
+function move_self_to_nokia_workload_cgroup()
+{
+    # if sim then skip
+    if [[ -f /.dockerenv ]]; then
+        return
+    fi
+    local cgroup_mnt_point
+    cgroup_mnt_point=$(findmnt  -t cgroup2 -o TARGET -n | tail -1)
+    if [[ -z ${cgroup_mnt_point} ]]; then
+        return
+    fi
+    local local_bash="/usr/bin/bash"
+    local pid=$(echo $$)
+    ${local_bash} -c "echo 300 >> /proc/${pid}/oom_score_adj"
+
+    # If user does not belong to ${g_linuxadmin_group} group, then do not move sr_cli ${g_srlinux_cgroup_name}
+    # In such case sr_cli will remain is same goup as process which started sr_cli.
+    user_in_group "$g_linuxadmin_group" || return
+
+    local cgroup_full_path=${cgroup_mnt_point}/${g_srlinux_cgroup_name}
+    if [[ ! -d "${cgroup_full_path}" ]]; then
+        return
+    fi
+    ${local_bash} -c "echo ${pid} >> ${cgroup_full_path}/cgroup.procs"
+}
+
+function store_stty()
+{
+    saved_stty="$(stty -g 2>/dev/null)"
+    # echo "Stored stty config: ${saved_stty}"
+}
+
+function restore_stty()
+{
+    if [ -n "${saved_stty}" ]; then
+        stty "${saved_stty}"
+        # echo "Restored stty config: ${saved_stty}"
+    fi
+}
+
+function cleanup()
+{
+    restore_stty
+}
+
+function add_trap_handlers()
+{
+    for sig in EXIT ABRT HUP INT PIPE QUIT TERM; do
+        trap "cleanup; [ $sig != EXIT ] && trap - $sig EXIT && kill -s $sig $$" $sig
+    done
+}
+
+function cli_main()
+{
+    move_self_to_nokia_workload_cgroup
+
+    local arguments=("$@")
+    local virtual_env="/opt/srlinux/python/virtual-env"
+    local local_virtual_env="/opt/srlinux/python/virtual-env"
+
+    # Add default config-file to arguments unless the user specified one
+    if [ $(contains "${arguments}" "--config-files") == "false" ]; then
+        local config_files=$(get_configuration_files)
+        if [ "${config_files}" != "" ]; then
+            # This is necessary because --config-files now accepts one or more arguments
+            if [[ "${#arguments[@]}" -gt 0 && ("${arguments[0]}" == "-" || ! "${arguments[0]}" == -*) ]]; then
+                arguments=("--config-files" ${config_files} -- "${arguments[@]}")
+            else
+                arguments=("--config-files" ${config_files} "${arguments[@]}")
+            fi
+        fi
+    fi
+
+    export PATH=/usr/sbin:$PATH
+
+    # Source the virtual-environment, which is used to ensure the correct python packages are installed,
+    source "${virtual_env}"/bin/activate
+
+    if [[ ${virtual_env} != "${local_virtual_env}" ]]; then
+        # local pyver=$(python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+        local pyver="3.11"
+        export PYTHONPATH=${local_virtual_env}/lib/python"${pyver}"/site-packages:${PYTHONPATH}
+        export PATH=${local_virtual_env}/bin:$PATH
+    else
+        export PATH=/opt/srlinux/bin:$PATH
+    fi
+
+    # Force utf-8 encoding, as it might default to ascii based on the local settings
+    if [ -z "$LANG" ]; then
+        export LANG=en_US.UTF-8
+    fi
+
+    local bootstrap_file="$(command -v bootstrap.py)"
+
+    store_stty
+    add_trap_handlers
+    PYTHONIOENCODING=UTF-8 python -Xfrozen_modules=off "${bootstrap_file}" 3>&2 2>/dev/null "${arguments[@]}"
+}
+
+
+function get_configuration_files()
+{
+    local GLOBAL_CLI_CONFIGURATION_FILE="/etc/opt/srlinux/srlinux.rc"
+    local HOME_CLI_CONFIGURATION_FILE="$HOME/.srlinuxrc"
+
+    if [ ! -e "$GLOBAL_CLI_CONFIGURATION_FILE" ]; then
+            GLOBAL_CLI_CONFIGURATION_FILE=""
+    fi
+
+    # set the default home version if it exists
+    if [ ! -e "$HOME_CLI_CONFIGURATION_FILE" ]; then
+            HOME_CLI_CONFIGURATION_FILE=""
+    fi
+
+
+    configuration_files=($GLOBAL_CLI_CONFIGURATION_FILE $HOME_CLI_CONFIGURATION_FILE $SRL_CLI_CONFIGURATION_FILE)
+
+    echo "${configuration_files[@]}"
+    return
+}
+
+function contains() {
+    local n=$#
+    local value=${!n}
+    for ((i=1;i < $#;i++)) {
+        if [ "${!i}" == "${value}" ]; then
+            echo "true"
+            return 0
+        fi
+    }
+    echo "false"
+    return 1
+}
+
+main "$@"
