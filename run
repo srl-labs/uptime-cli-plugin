@@ -42,13 +42,14 @@ function get-uv {
 # install fetched requirements to the local venv
 function install-uv-deps {
     uv add --requirements ./private/requirements.txt
+    uv add --dev ruff
 }
 
 
 # copy out the srlinux cli package from the container to the host.
 # will be available in ./src/srlinux directory
 function fetch-srl-cli-package {
-    sudo docker cp srl:/opt/srlinux/python/virtual-env/lib/python3.11/dist-packages/srlinux ./src
+    sudo docker cp srl:/opt/srlinux/python/virtual-env/lib/python3.11/dist-packages/srlinux ./private
 }
 
 
