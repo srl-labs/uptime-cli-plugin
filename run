@@ -16,7 +16,7 @@ function destroy-lab {
 #### Dev env functions
 #########################################
 function get-srl-venv-requirements {
-    mkdir ./private
+    mkdir -p ./private
     # get the venv requirements from the container 
     sudo docker exec -i -t srl /opt/srlinux/python/virtual-env/bin/pip freeze \
     > ./private/requirements.txt
@@ -59,7 +59,6 @@ function check-uv {
     then
         echo "uv could not be found";
     fi
-
 }
 
 # run all functions to setup the dev env
@@ -69,7 +68,7 @@ function setup-dev-env {
     deploy-lab
     get-srl-venv-requirements
     filter-srl-venv-requirements
-    install-uv-deps
+    uv sync --all-groups
     fetch-srl-cli-package
 }
 
