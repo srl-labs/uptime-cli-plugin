@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36" version="26.0.11" pages="3">
   <diagram name="[0] Cli plugins" id="FyxOA19ZdZb6XShkcGTg">
-    <mxGraphModel dx="500" dy="278" grid="0" gridSize="2" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3300" pageHeight="4681" background="#4D5766" math="0" shadow="0">
+    <mxGraphModel dx="1012" dy="563" grid="0" gridSize="2" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3300" pageHeight="4681" background="#4D5766" math="0" shadow="0">
       <root>
         <mxCell id="v35DyY4_wD7kl4gQBfIq-0" />
         <mxCell id="v35DyY4_wD7kl4gQBfIq-1" parent="v35DyY4_wD7kl4gQBfIq-0" />
@@ -23,7 +23,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="cjOOpPMKw65pERf4yYbk-0" value="CLI engine" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#BEC8D2;fontFamily=Google Sans;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DGoogle%2BSans;fillColor=#EDF3F5;" vertex="1" parent="v35DyY4_wD7kl4gQBfIq-1">
+        <mxCell id="cjOOpPMKw65pERf4yYbk-0" value="&lt;b&gt;CLI ENGINE&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#BEC8D2;fontFamily=Google Sans;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DGoogle%2BSans;fillColor=#EDF3F5;" vertex="1" parent="v35DyY4_wD7kl4gQBfIq-1">
           <mxGeometry x="1452" y="1549" width="129" height="40" as="geometry" />
         </mxCell>
         <mxCell id="cjOOpPMKw65pERf4yYbk-5" value="&lt;font style=&quot;color: rgb(190, 200, 210);&quot;&gt;&lt;b&gt;configuration&lt;br&gt;&lt;/b&gt;commands&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#BEC8D2;fontFamily=Google Sans;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DGoogle%2BSans;fillColor=#EDF3F5;gradientColor=none;opacity=40;dashed=1;" vertex="1" parent="v35DyY4_wD7kl4gQBfIq-1">
