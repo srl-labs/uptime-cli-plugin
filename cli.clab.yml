@@ -8,8 +8,4 @@ topology:
       image: ghcr.io/nokia/srlinux:24.10.2
       binds:
         # the uptime.py is a plugin that returns uptime of the SRLinux
-        # - src/uptime.py:/etc/opt/srlinux/cli/plugins/uptime.py
-
-        # the uptime_simply.py is simplified version of uptime.py
-        # where all type validations are skipped for brevity
-        - src/uptime_simple.py:/etc/opt/srlinux/cli/plugins/uptime.py
+        - src/uptime.py:/etc/opt/srlinux/cli/plugins/uptime.py
