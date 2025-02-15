@@ -11,6 +11,7 @@ from srlinux.mgmt.cli.cli_output import CliOutput
 from srlinux.mgmt.cli.cli_state import CliState
 from srlinux.mgmt.server.server_error import ServerError
 from srlinux.schema import FixedSchemaRoot, SchemaNode
+from srlinux.schema.fixed_schema import FixedSchemaNode
 from srlinux.syntax import Syntax
 
 logger = logging.getLogger(__name__)
@@ -22,29 +23,32 @@ class Plugin(CliPlugin):
     Adds `show uptime` command.
 
     Example output:
-    ```
-    --{ running }--[  ]--
-    A:srl# show uptime
-    ----------------------------------------------------------------------
-    Uptime     : 0 days 6 hours 0 minutes 25 seconds
-    Last Booted: 2024-10-24T03:31:50.561Z
-    ----------------------------------------------------------------------
-    ```
+
+        --{ running }--[  ]--
+        A:srl# show uptime
+        ----------------------------------------------------------------------
+        Uptime     : 0 days 6 hours 0 minutes 25 seconds
+        Last Booted: 2024-10-24T03:31:50.561Z
+        ----------------------------------------------------------------------
+
     """
 
     def load(self, cli: CliLoader, **_kwargs):
         cli.show_mode.add_command(
-            syntax=Syntax(
-                name="uptime",
-                short_help="⌛ Show platform uptime",
-                help="⌛ Show platform uptime in days, hours, minutes and seconds.",
-                help_epilogue="📖 It is easy to wrap up your own CLI command. Learn more about SR Linux at https://learn.srlinux.dev",
-            ),
-            schema=self._get_schema(),
+            syntax=self._syntax(),
+            schema=self._schema(),
             callback=self._print,
         )
 
-    def _get_schema(self):
+    def _syntax(self) -> Syntax:
+        return Syntax(
+            name="uptime",
+            short_help="⌛ Show platform uptime",
+            help="⌛ Show platform uptime in days, hours, minutes and seconds.",
+            help_epilogue="📖 It is easy to wrap up your own CLI command. Learn more about SR Linux at https://learn.srlinux.dev",
+        )
+
+    def _schema(self) -> FixedSchemaNode:
         root = FixedSchemaRoot()
         root.add_child(
             "uptime",
