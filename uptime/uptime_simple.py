@@ -25,7 +25,7 @@ class Plugin(CliPlugin):
         ----------------------------------------------------------------------
     """
 
-    def load(self, cli, **_kwargs):
+    def load(self, cli, arguments):
         cli.show_mode.add_command(
             syntax=self._syntax(),
             schema=self._schema(),

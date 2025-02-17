@@ -1,3 +1,4 @@
+import argparse
 import logging
 from datetime import datetime, timezone
 from typing import cast
@@ -33,7 +34,7 @@ class Plugin(CliPlugin):
 
     """
 
-    def load(self, cli: CliLoader, **_kwargs):
+    def load(self, cli: CliLoader, arguments: argparse.Namespace) -> None:
         cli.show_mode.add_command(
             syntax=self._syntax(),
             schema=self._schema(),
