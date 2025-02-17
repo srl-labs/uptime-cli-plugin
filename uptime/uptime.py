@@ -15,5 +15,5 @@ class Plugin(CliPlugin):
         ----------------------------------------------------------------------
     """
 
-    def load(self, cli, **_kwargs):
+    def load(self, cli, arguments):
         pass
