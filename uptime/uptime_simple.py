@@ -17,29 +17,30 @@ class Plugin(CliPlugin):
     Adds `show uptime` command.
 
     Example output:
-    ```
-    --{ running }--[  ]--
-    A:srl# show uptime
-    ----------------------------------------------------------------------
-    Uptime     : 0 days 6 hours 0 minutes 25 seconds
-    Last Booted: 2024-10-24T03:31:50.561Z
-    ----------------------------------------------------------------------
-    ```
+        --{ running }--[  ]--
+        A:srl# show uptime
+        ----------------------------------------------------------------------
+        Uptime     : 0 days 6 hours 0 minutes 25 seconds
+        Last Booted: 2024-10-24T03:31:50.561Z
+        ----------------------------------------------------------------------
     """
 
     def load(self, cli, **_kwargs):
         cli.show_mode.add_command(
-            syntax=Syntax(
-                name="uptime",
-                short_help="⌛ Show platform uptime",
-                help="⌛ Show platform uptime in days, hours, minutes and seconds.",
-                help_epilogue="📖 It is easy to wrap up your own CLI command. Learn more about SR Linux at https://learn.srlinux.dev",
-            ),
-            schema=self._get_schema(),
+            syntax=self._syntax(),
+            schema=self._schema(),
             callback=self._print,
         )
 
-    def _get_schema(self):
+    def _syntax(self):
+        return Syntax(
+            name="uptime",
+            short_help="⌛ Show platform uptime",
+            help="⌛ Show platform uptime in days, hours, minutes and seconds.",
+            help_epilogue="📖 It is easy to wrap up your own CLI command. Learn more about SR Linux at https://learn.srlinux.dev",
+        )
+
+    def _schema(self):
         root = FixedSchemaRoot()
         root.add_child(
             "uptime",
@@ -56,14 +57,14 @@ class Plugin(CliPlugin):
         output,
         arguments,
         **_kwargs,
-    ) -> None:
+    ):
         self._fetch_state(state)
         data = self._populate_data(arguments)
         self._set_formatters(data)
         output.print_data(data)
 
     def _fetch_state(self, state):
-        last_booted_path = build_path("/platform/chassis/last-booted")
+        last_booted_path = build_path("/system/information/last-booted")
 
         try:
             self._last_booted_data = state.server_data_store.get_data(
@@ -78,7 +79,7 @@ class Plugin(CliPlugin):
         uptime_container = data.uptime.create()
 
         uptime_container.last_booted = (
-            self._last_booted_data.platform.get().chassis.get().last_booted
+            self._last_booted_data.system.get().information.get().last_booted
         )
 
         uptime_container.uptime = _calculate_uptime(uptime_container.last_booted)
@@ -108,7 +109,7 @@ def _calculate_uptime(last_booted):
     minutes = (uptime_delta.seconds % 3600) // 60
     seconds = uptime_delta.seconds % 60
 
-    # # Format human readable string
+    # Format human readable string
     t = f"{days} days {hours} hours {minutes} minutes {seconds} seconds"
 
     return t

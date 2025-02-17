@@ -72,7 +72,7 @@ class Plugin(CliPlugin):
         output.print_data(data)
 
     def _fetch_state(self, state: CliState):
-        last_booted_path = build_path("/platform/chassis/last-booted")
+        last_booted_path = build_path("/system/information/last-booted")
 
         try:
             self._last_booted_data = state.server_data_store.get_data(
@@ -89,24 +89,24 @@ class Plugin(CliPlugin):
 
         uptime_container = data.uptime.create()
 
-        if self._last_booted_data:
-            if not isinstance(self._last_booted_data.platform, DataChildrenOfType):
-                raise ValueError("Platform is not a container")
+        if not self._last_booted_data:
+            raise ValueError("Last booted data not available")
 
-            platform = self._last_booted_data.platform.get()
-            if not isinstance(platform.chassis, DataChildrenOfType):
-                raise ValueError("Chassis is not a container")
+        if not isinstance(self._last_booted_data.system, DataChildrenOfType):
+            raise ValueError("System is not a container")
 
-            chassis = platform.chassis.get()
+        system = self._last_booted_data.system.get()
+        if not isinstance(system.information, DataChildrenOfType):
+            raise ValueError("Information is not a container")
 
-            if not isinstance(chassis.last_booted, str):
-                raise ValueError("Last booted is not a leaf")
+        sys_information = system.information.get()
 
-            uptime_container.last_booted = chassis.last_booted
+        if not isinstance(sys_information.last_booted, str):
+            raise ValueError("Last booted is not a leaf")
 
-            uptime_container.uptime = _calculate_uptime(
-                str(uptime_container.last_booted)
-            )
+        uptime_container.last_booted = sys_information.last_booted
+
+        uptime_container.uptime = _calculate_uptime(str(uptime_container.last_booted))
 
         return data
 
@@ -133,7 +133,7 @@ def _calculate_uptime(last_booted: str) -> str:
     minutes = (uptime_delta.seconds % 3600) // 60
     seconds = uptime_delta.seconds % 60
 
-    # # Format human readable string
+    # Format human readable string
     t = f"{days} days {hours} hours {minutes} minutes {seconds} seconds"
 
     return t
