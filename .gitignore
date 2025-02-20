@@ -5,3 +5,4 @@ src/srlinux
 .envrc
 private
 tmp
+__pycache__
