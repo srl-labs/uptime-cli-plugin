@@ -16,7 +16,7 @@ function destroy-lab {
 #### Dev env functions
 #########################################
 function get-srl-venv-requirements {
-    mkdir ./private
+    mkdir -p ./private
     # get the venv requirements from the container 
     sudo docker exec -i -t srl /opt/srlinux/python/virtual-env/bin/pip freeze \
     > ./private/requirements.txt
@@ -48,7 +48,8 @@ function install-uv-deps {
 # copy out the srlinux cli package from the container to the host.
 # will be available in ./src/srlinux directory
 function fetch-srl-cli-package {
-    sudo docker cp srl:/opt/srlinux/python/virtual-env/lib/python3.11/dist-packages/srlinux ./src
+    mkdir -p ./private/srlinux
+    sudo docker cp srl:/opt/srlinux/python/virtual-env/lib/python3.11/dist-packages/srlinux ./private/srlinux
 }
 
 
