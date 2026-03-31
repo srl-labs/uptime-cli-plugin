@@ -9,3 +9,12 @@ topology:
       binds:
         # the uptime.py is a plugin that returns uptime of the SR Linux system
         - uptime/uptime.py:/etc/opt/srlinux/cli/plugins/uptime/uptime.py
+
+        # debug script
+        - debug/prepare-debug.sh:/tmp/prepare-debug.sh
+
+      env:
+        WAIT_FOR_DEBUG_CONN: "true"
+      # uncomment to enable debugging mode
+      exec:
+        - bash /tmp/prepare-debug.sh
